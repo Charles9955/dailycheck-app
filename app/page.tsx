@@ -20,7 +20,7 @@ import {
   daysUntil,
   relativeDay,
   formatDate,
-  clamp,
+  goalPercent,
 } from "@/lib/utils";
 
 export default function DashboardPage() {
@@ -37,7 +37,7 @@ export default function DashboardPage() {
   );
 
   const upcoming = [...subscriptions]
-    .filter((s) => daysUntil(s.renewalDate) >= 0)
+    .filter((s) => s.renewalDate && daysUntil(s.renewalDate) >= 0)
     .sort((a, b) => daysUntil(a.renewalDate) - daysUntil(b.renewalDate))
     .slice(0, 5);
 
@@ -46,7 +46,7 @@ export default function DashboardPage() {
   );
 
   const activeGoals = [...goals]
-    .sort((a, b) => b.current / b.target - a.current / a.target)
+    .sort((a, b) => goalPercent(b.current, b.target) - goalPercent(a.current, a.target))
     .slice(0, 4);
 
   const recentNotes = [...notes]
@@ -174,13 +174,13 @@ export default function DashboardPage() {
           ) : (
             <div className="mt-4 space-y-4">
               {activeGoals.map((g) => {
-                const pct = clamp((g.current / g.target) * 100);
+                const pct = goalPercent(g.current, g.target);
                 return (
                   <div key={g.id}>
                     <div className="mb-1.5 flex items-center justify-between text-sm">
                       <span className="font-medium text-white">{g.title}</span>
                       <span className="text-ink-400">
-                        {g.unit === "$"
+                        {g.unit === "kr"
                           ? `${formatCurrency(g.current)} / ${formatCurrency(g.target)}`
                           : `${g.current} / ${g.target} ${g.unit}`}
                       </span>

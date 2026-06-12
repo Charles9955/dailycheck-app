@@ -77,8 +77,8 @@ export default function ExpensesPage() {
   }, [expenses, filter]);
 
   function save() {
-    if (!form.description.trim() || form.amount <= 0) return;
-    addExpense(form);
+    // Everything optional — default a blank description.
+    addExpense({ ...form, description: form.description.trim() || "Untitled" });
     setForm(empty);
     setOpen(false);
   }
@@ -209,13 +209,13 @@ export default function ExpensesPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Amount</Label>
+              <Label>Amount (kr)</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={form.amount || ""}
                 onChange={(e) => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
-                placeholder="0.00"
+                placeholder="0"
               />
             </div>
             <div>

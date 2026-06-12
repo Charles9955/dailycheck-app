@@ -34,7 +34,7 @@ export function seedData(): AppData {
     ],
     goals: [
       { id: uid(), title: "Read 24 books", category: "Personal", target: 24, current: 11, unit: "books", deadline: dateOffset(200) },
-      { id: uid(), title: "Emergency fund", category: "Finance", target: 10000, current: 6400, unit: "$", deadline: dateOffset(150) },
+      { id: uid(), title: "Emergency fund", category: "Finance", target: 10000, current: 6400, unit: "kr", deadline: dateOffset(150) },
       { id: uid(), title: "Run 500 km", category: "Fitness", target: 500, current: 318, unit: "km", deadline: dateOffset(90) },
       { id: uid(), title: "Ship side project", category: "Career", target: 100, current: 65, unit: "%", deadline: dateOffset(45) },
       { id: uid(), title: "Learn Spanish", category: "Learning", target: 100, current: 30, unit: "lessons", deadline: dateOffset(180) },

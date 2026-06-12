@@ -12,17 +12,19 @@ export function cn(...classes: Array<string | false | null | undefined>): string
 }
 
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
+  // Swedish kronor — e.g. "199 kr" / "199,00 kr"
+  return new Intl.NumberFormat("sv-SE", {
     style: "currency",
-    currency: "USD",
+    currency: "SEK",
     minimumFractionDigits: value % 1 === 0 ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(value);
 }
 
 export function formatDate(iso: string, opts?: Intl.DateTimeFormatOptions): string {
+  if (!iso) return "No date";
   const d = new Date(iso + "T00:00:00");
-  if (Number.isNaN(d.getTime())) return iso;
+  if (Number.isNaN(d.getTime())) return "No date";
   return d.toLocaleDateString("en-US", opts ?? { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -60,14 +62,20 @@ export function cycleLabel(cycle: BillingCycle): string {
   return { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[cycle];
 }
 
-export function daysUntil(iso: string): number {
+// Empty/undefined dates sort to the far future (Infinity) so they never
+// count as "due" or "upcoming".
+export function daysUntil(iso?: string): number {
+  if (!iso) return Infinity;
   const target = new Date(iso + "T00:00:00").getTime();
+  if (Number.isNaN(target)) return Infinity;
   const now = new Date(todayISO() + "T00:00:00").getTime();
   return Math.round((target - now) / 86400000);
 }
 
-export function relativeDay(iso: string): string {
+export function relativeDay(iso?: string): string {
+  if (!iso) return "";
   const d = daysUntil(iso);
+  if (!Number.isFinite(d)) return "";
   if (d === 0) return "Today";
   if (d === 1) return "Tomorrow";
   if (d === -1) return "Yesterday";
@@ -77,6 +85,12 @@ export function relativeDay(iso: string): string {
 
 export function clamp(n: number, min = 0, max = 100): number {
   return Math.min(max, Math.max(min, n));
+}
+
+// Safe goal completion percentage (0–100); returns 0 when target is unset.
+export function goalPercent(current: number, target: number): number {
+  if (!target || target <= 0) return 0;
+  return clamp((current / target) * 100);
 }
 
 export function sum(nums: number[]): number {

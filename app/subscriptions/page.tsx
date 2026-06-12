@@ -26,7 +26,6 @@ import {
   relativeDay,
   daysUntil,
   sum,
-  todayISO,
 } from "@/lib/utils";
 
 const CATEGORIES = [
@@ -45,7 +44,7 @@ const empty: Omit<Subscription, "id"> = {
   name: "",
   price: 0,
   billingCycle: "monthly",
-  renewalDate: todayISO(),
+  renewalDate: "",
   category: "Entertainment",
   color: "#5b6cff",
 };
@@ -79,9 +78,10 @@ export default function SubscriptionsPage() {
   }
 
   function save() {
-    if (!form.name.trim()) return;
-    if (editing) updateSubscription(editing.id, form);
-    else addSubscription(form);
+    // Everything is optional — fall back to a friendly placeholder name.
+    const payload = { ...form, name: form.name.trim() || "Untitled" };
+    if (editing) updateSubscription(editing.id, payload);
+    else addSubscription(payload);
     setOpen(false);
   }
 
@@ -163,11 +163,17 @@ export default function SubscriptionsPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-ink-400">Renews</p>
-                    <Badge color={d <= 3 ? "#f2557d" : d <= 7 ? "#f5a623" : "#6b6d85"}>
-                      {relativeDay(s.renewalDate)}
-                    </Badge>
-                    <p className="mt-1 text-[11px] text-ink-400">{formatDate(s.renewalDate)}</p>
+                    {s.renewalDate ? (
+                      <>
+                        <p className="text-xs text-ink-400">Renews</p>
+                        <Badge color={d <= 3 ? "#f2557d" : d <= 7 ? "#f5a623" : "#6b6d85"}>
+                          {relativeDay(s.renewalDate)}
+                        </Badge>
+                        <p className="mt-1 text-[11px] text-ink-400">{formatDate(s.renewalDate)}</p>
+                      </>
+                    ) : (
+                      <p className="text-[11px] text-ink-400">No renewal date</p>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -201,13 +207,13 @@ export default function SubscriptionsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Price</Label>
+              <Label>Price (kr)</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={form.price || ""}
                 onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
-                placeholder="0.00"
+                placeholder="0"
               />
             </div>
             <div>
@@ -227,7 +233,7 @@ export default function SubscriptionsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Renewal date</Label>
+              <Label>Renewal date (optional)</Label>
               <Input
                 type="date"
                 value={form.renewalDate}

@@ -25,7 +25,9 @@ export default function CalendarPage() {
 
   const events = useMemo<CalendarEvent[]>(() => {
     const out: CalendarEvent[] = [];
-    subscriptions.forEach((s) =>
+    // Only items with a date land on the calendar — dates are optional.
+    subscriptions.forEach((s) => {
+      if (!s.renewalDate) return;
       out.push({
         id: `sub-${s.id}`,
         date: s.renewalDate,
@@ -33,9 +35,10 @@ export default function CalendarPage() {
         type: "subscription",
         color: TYPE_META.subscription.color,
         meta: formatCurrency(s.price),
-      }),
-    );
-    tasks.forEach((t) =>
+      });
+    });
+    tasks.forEach((t) => {
+      if (!t.dueDate) return;
       out.push({
         id: `task-${t.id}`,
         date: t.dueDate,
@@ -43,17 +46,18 @@ export default function CalendarPage() {
         type: "task",
         color: TYPE_META.task.color,
         meta: t.status === "done" ? "Done" : t.priority,
-      }),
-    );
-    goals.forEach((g) =>
+      });
+    });
+    goals.forEach((g) => {
+      if (!g.deadline) return;
       out.push({
         id: `goal-${g.id}`,
         date: g.deadline,
         title: g.title,
         type: "goal",
         color: TYPE_META.goal.color,
-      }),
-    );
+      });
+    });
     return out;
   }, [subscriptions, tasks, goals]);
 

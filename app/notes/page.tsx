@@ -65,13 +65,13 @@ export default function NotesPage() {
     setOpen(true);
   }
   function save() {
-    if (!draft.title.trim()) return;
+    const title = draft.title.trim() || "Untitled";
     const tags = draft.tags
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
-    if (editing) updateNote(editing.id, { title: draft.title, content: draft.content, tags });
-    else addNote({ title: draft.title, content: draft.content, tags });
+    if (editing) updateNote(editing.id, { title, content: draft.content, tags });
+    else addNote({ title, content: draft.content, tags });
     setOpen(false);
   }
 

@@ -18,7 +18,7 @@ import {
   EmptyState,
 } from "@/components/ui";
 import type { Goal } from "@/lib/types";
-import { formatCurrency, formatDate, relativeDay, clamp, dateOffset } from "@/lib/utils";
+import { formatCurrency, formatDate, relativeDay, clamp, goalPercent } from "@/lib/utils";
 
 const CATEGORIES = ["Personal", "Finance", "Fitness", "Career", "Learning", "Other"];
 const CATEGORY_COLORS: Record<string, string> = {
@@ -36,7 +36,7 @@ const empty: Omit<Goal, "id"> = {
   target: 100,
   current: 0,
   unit: "%",
-  deadline: dateOffset(60),
+  deadline: "",
 };
 
 export default function GoalsPage() {
@@ -45,12 +45,15 @@ export default function GoalsPage() {
   const [editing, setEditing] = useState<Goal | null>(null);
   const [form, setForm] = useState(empty);
 
-  const completed = useMemo(() => goals.filter((g) => g.current >= g.target).length, [goals]);
+  const completed = useMemo(
+    () => goals.filter((g) => g.target > 0 && g.current >= g.target).length,
+    [goals],
+  );
   const avgProgress = useMemo(
     () =>
       goals.length
         ? Math.round(
-            goals.reduce((acc, g) => acc + clamp((g.current / g.target) * 100), 0) / goals.length,
+            goals.reduce((acc, g) => acc + goalPercent(g.current, g.target), 0) / goals.length,
           )
         : 0,
     [goals],
@@ -68,13 +71,14 @@ export default function GoalsPage() {
     setOpen(true);
   }
   function save() {
-    if (!form.title.trim() || form.target <= 0) return;
-    if (editing) updateGoal(editing.id, form);
-    else addGoal(form);
+    const payload = { ...form, title: form.title.trim() || "Untitled" };
+    if (editing) updateGoal(editing.id, payload);
+    else addGoal(payload);
     setOpen(false);
   }
   function step(g: Goal, delta: number) {
-    const next = clamp(g.current + delta, 0, g.target);
+    const upper = g.target > 0 ? g.target : Infinity;
+    const next = clamp(g.current + delta, 0, upper);
     updateGoal(g.id, { current: next });
   }
 
@@ -114,10 +118,10 @@ export default function GoalsPage() {
       ) : (
         <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
           {goals.map((g) => {
-            const pct = clamp((g.current / g.target) * 100);
-            const done = g.current >= g.target;
+            const pct = goalPercent(g.current, g.target);
+            const done = g.target > 0 && g.current >= g.target;
             const color = CATEGORY_COLORS[g.category] ?? "#5b6cff";
-            const fmt = (n: number) => (g.unit === "$" ? formatCurrency(n) : `${n} ${g.unit}`);
+            const fmt = (n: number) => (g.unit === "kr" ? formatCurrency(n) : `${n} ${g.unit}`);
             const stepSize = g.target >= 1000 ? 100 : g.target >= 100 ? 5 : 1;
             return (
               <Card key={g.id} className="group p-5">
@@ -129,9 +133,11 @@ export default function GoalsPage() {
                     </div>
                     <div className="mt-1 flex items-center gap-2">
                       <Badge color={color}>{g.category}</Badge>
-                      <span className="text-xs text-ink-400">
-                        Due {formatDate(g.deadline)} · {relativeDay(g.deadline)}
-                      </span>
+                      {g.deadline && (
+                        <span className="text-xs text-ink-400">
+                          Due {formatDate(g.deadline)} · {relativeDay(g.deadline)}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -173,7 +179,7 @@ export default function GoalsPage() {
                   >
                     <Plus size={15} />
                   </IconButton>
-                  <span className="text-xs text-ink-400">±{stepSize} {g.unit === "$" ? "$" : g.unit}</span>
+                  <span className="text-xs text-ink-400">±{stepSize} {g.unit}</span>
                 </div>
               </Card>
             );
@@ -223,7 +229,7 @@ export default function GoalsPage() {
               <Input
                 value={form.unit}
                 onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                placeholder="%, km, books, $…"
+                placeholder="%, km, books, kr…"
               />
             </div>
           </div>
@@ -246,7 +252,7 @@ export default function GoalsPage() {
             </div>
           </div>
           <div>
-            <Label>Deadline</Label>
+            <Label>Deadline (optional)</Label>
             <Input
               type="date"
               value={form.deadline}

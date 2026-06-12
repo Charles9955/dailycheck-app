@@ -17,7 +17,7 @@ import {
   EmptyState,
 } from "@/components/ui";
 import type { Task, TaskPriority, TaskStatus } from "@/lib/types";
-import { formatDate, relativeDay, daysUntil, todayISO, cn } from "@/lib/utils";
+import { formatDate, relativeDay, daysUntil, cn } from "@/lib/utils";
 
 const PRIORITY_META: Record<TaskPriority, { label: string; color: string }> = {
   high: { label: "High", color: "#f2557d" },
@@ -37,7 +37,7 @@ type Filter = (typeof FILTERS)[number];
 const empty: Omit<Task, "id" | "createdAt"> = {
   title: "",
   notes: "",
-  dueDate: todayISO(),
+  dueDate: "",
   priority: "medium",
   status: "todo",
 };
@@ -84,9 +84,9 @@ export default function TasksPage() {
     setOpen(true);
   }
   function save() {
-    if (!form.title.trim()) return;
-    if (editing) updateTask(editing.id, form);
-    else addTask(form);
+    const payload = { ...form, title: form.title.trim() || "Untitled" };
+    if (editing) updateTask(editing.id, payload);
+    else addTask(payload);
     setOpen(false);
   }
   function toggle(t: Task) {
@@ -169,9 +169,11 @@ export default function TasksPage() {
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <Badge color={pm.color}>{pm.label}</Badge>
                     <Badge color={STATUS_META[t.status].color}>{STATUS_META[t.status].label}</Badge>
-                    <span className={cn("text-xs", overdue ? "text-accent-rose" : "text-ink-400")}>
-                      {formatDate(t.dueDate)} · {relativeDay(t.dueDate)}
-                    </span>
+                    {t.dueDate && (
+                      <span className={cn("text-xs", overdue ? "text-accent-rose" : "text-ink-400")}>
+                        {formatDate(t.dueDate)} · {relativeDay(t.dueDate)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -227,7 +229,7 @@ export default function TasksPage() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <Label>Due date</Label>
+              <Label>Due date (optional)</Label>
               <Input
                 type="date"
                 value={form.dueDate}
