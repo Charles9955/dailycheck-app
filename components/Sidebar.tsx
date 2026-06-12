@@ -6,6 +6,7 @@ import { CheckCircle2, X, RotateCcw, Sparkles } from "lucide-react";
 import { navItems } from "./nav";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/lib/store";
+import { AccountPanel } from "./AccountPanel";
 
 export function Sidebar({
   mobileOpen,
@@ -108,26 +109,23 @@ export function Sidebar({
           })}
         </nav>
 
-        {/* Footer card */}
-        <div className="m-3 rounded-xl border border-ink-800 bg-ink-850 p-3">
-          <p className="text-xs font-medium text-white">Local-first</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-400">
-            All your data is stored privately in this browser.
-          </p>
-          <div className="mt-3 flex flex-col gap-1.5">
-            <button
-              onClick={loadSampleData}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium text-ink-300 transition-colors hover:bg-ink-800 hover:text-white"
-            >
-              <Sparkles size={13} /> Load sample data
-            </button>
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium text-accent-rose/80 transition-colors hover:bg-accent-rose/10 hover:text-accent-rose"
-            >
-              <RotateCcw size={13} /> Reset all data
-            </button>
-          </div>
+        {/* Account + sync */}
+        <AccountPanel />
+
+        {/* Data controls */}
+        <div className="mx-3 mb-3 flex flex-col gap-1">
+          <button
+            onClick={loadSampleData}
+            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium text-ink-300 transition-colors hover:bg-ink-800 hover:text-white"
+          >
+            <Sparkles size={13} /> Load sample data
+          </button>
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium text-accent-rose/80 transition-colors hover:bg-accent-rose/10 hover:text-accent-rose"
+          >
+            <RotateCcw size={13} /> Reset all data
+          </button>
         </div>
       </aside>
     </>

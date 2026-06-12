@@ -44,7 +44,24 @@ npm start
 2. Import it on [vercel.com/new](https://vercel.com/new).
 3. Accept the defaults (Next.js is auto-detected) and deploy.
 
-No environment variables are required — all data lives in the browser.
+No environment variables are required for the local-only mode — all data lives in the browser.
+
+## ☁️ Optional: cloud sync with Supabase
+
+By default the app is **local-only**. To back up your data and sync it across devices, connect a free [Supabase](https://supabase.com) project:
+
+1. Create a project at [supabase.com](https://supabase.com) (the free tier is plenty).
+2. **SQL Editor → New query** → paste the contents of [`supabase/schema.sql`](supabase/schema.sql) → **Run**. This creates the `app_state` table with Row Level Security.
+3. **Authentication → Providers** → make sure **Email** is enabled (magic links work out of the box).
+4. **Settings → API** → copy the **Project URL** and **anon public** key.
+5. Add them as environment variables — locally in `.env.local` (see [`.env.local.example`](.env.local.example)) and in **Vercel → Project → Settings → Environment Variables**:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-ref.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ```
+6. Redeploy. A **Sync across devices** panel appears in the sidebar — sign in with a magic link and your data is backed up automatically.
+
+**How it works:** each user's entire dashboard is stored as a single JSON row in `app_state`, protected by RLS so you can only ever access your own data. localStorage is kept as an instant-load cache and offline fallback. The anon key is safe to expose in the browser — it's public by design and RLS does the protecting.
 
 ## 🗂️ Project structure
 
