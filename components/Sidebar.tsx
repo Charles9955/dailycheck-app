@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, X, RotateCcw, Sparkles } from "lucide-react";
 import { navItems } from "./nav";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/lib/store";
 
 export function Sidebar({
   mobileOpen,
@@ -14,6 +15,17 @@ export function Sidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const { resetData, loadSampleData } = useStore();
+
+  function handleReset() {
+    if (
+      window.confirm(
+        "Reset all data? This permanently clears every subscription, expense, task, goal, and note stored in this browser.",
+      )
+    ) {
+      resetData();
+    }
+  }
 
   return (
     <>
@@ -102,6 +114,20 @@ export function Sidebar({
           <p className="mt-1 text-[11px] leading-relaxed text-ink-400">
             All your data is stored privately in this browser.
           </p>
+          <div className="mt-3 flex flex-col gap-1.5">
+            <button
+              onClick={loadSampleData}
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium text-ink-300 transition-colors hover:bg-ink-800 hover:text-white"
+            >
+              <Sparkles size={13} /> Load sample data
+            </button>
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium text-accent-rose/80 transition-colors hover:bg-accent-rose/10 hover:text-accent-rose"
+            >
+              <RotateCcw size={13} /> Reset all data
+            </button>
+          </div>
         </div>
       </aside>
     </>

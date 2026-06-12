@@ -40,6 +40,7 @@ interface StoreContextValue extends AppData {
   removeNote: (id: string) => void;
   // Global
   resetData: () => void;
+  loadSampleData: () => void;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -56,19 +57,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<AppData>(emptyData);
   const [ready, setReady] = useState(false);
 
-  // Load once on mount (client-only).
+  // Load once on mount (client-only). Starts empty — no fake/seed data.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         setData({ ...emptyData, ...(JSON.parse(raw) as AppData) });
-      } else {
-        const seeded = seedData();
-        setData(seeded);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
       }
     } catch {
-      setData(seedData());
+      setData(emptyData);
     } finally {
       setReady(true);
     }
@@ -130,10 +127,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ),
     removeNote: (id) => mutate("notes", (xs) => xs.filter((x) => x.id !== id)),
 
+    // Wipe everything back to a clean, empty state.
     resetData: () => {
-      const seeded = seedData();
-      setData(seeded);
+      setData(emptyData);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
     },
+
+    // Opt-in demo data for anyone who wants to explore the app.
+    loadSampleData: () => setData(seedData()),
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
