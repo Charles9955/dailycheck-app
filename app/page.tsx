@@ -32,6 +32,8 @@ export default function DashboardPage() {
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
   const monthlySubs = sum(subscriptions.map(monthlyCost));
+  const paygCount = subscriptions.filter((s) => s.billingCycle === "as-you-go").length;
+  const recurringCount = subscriptions.length - paygCount;
   const monthSpend = sum(
     expenses.filter((e) => e.date.startsWith(monthKey)).map((e) => e.amount),
   );
@@ -65,7 +67,11 @@ export default function DashboardPage() {
         <StatCard
           label="Monthly subscriptions"
           value={formatCurrency(monthlySubs)}
-          sub={`${subscriptions.length} active · ${formatCurrency(monthlySubs * 12)}/yr`}
+          sub={
+            paygCount > 0
+              ? `${recurringCount} recurring · ${paygCount} pay-as-you-go`
+              : `${recurringCount} active · ${formatCurrency(monthlySubs * 12)}/yr`
+          }
           icon={<CreditCard size={18} />}
           accent="#a855f7"
         />

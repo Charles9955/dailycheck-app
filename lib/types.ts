@@ -1,6 +1,8 @@
 // ---- Core domain types for DailyCheck ----
 
-export type BillingCycle = "weekly" | "monthly" | "quarterly" | "yearly";
+// "as-you-go" = usage-based (e.g. API keys) — paid only when a balance is
+// used up, so it has no fixed schedule and is excluded from recurring totals.
+export type BillingCycle = "weekly" | "monthly" | "quarterly" | "yearly" | "as-you-go";
 
 export interface Subscription {
   id: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, CreditCard } from "lucide-react";
+import { Plus, Pencil, Trash2, CreditCard, Gauge } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/AppShell";
 import {
@@ -26,6 +26,7 @@ import {
   relativeDay,
   daysUntil,
   sum,
+  isPayAsYouGo,
 } from "@/lib/utils";
 
 const CATEGORIES = [
@@ -59,10 +60,19 @@ export default function SubscriptionsPage() {
   const monthlyTotal = useMemo(() => sum(subscriptions.map(monthlyCost)), [subscriptions]);
   const yearlyTotal = useMemo(() => sum(subscriptions.map(yearlyCost)), [subscriptions]);
 
-  const sorted = useMemo(
-    () => [...subscriptions].sort((a, b) => daysUntil(a.renewalDate) - daysUntil(b.renewalDate)),
+  // Split recurring subscriptions from usage-based (pay-as-you-go) ones.
+  const recurring = useMemo(
+    () =>
+      subscriptions
+        .filter((s) => !isPayAsYouGo(s))
+        .sort((a, b) => daysUntil(a.renewalDate) - daysUntil(b.renewalDate)),
     [subscriptions],
   );
+  const payAsYouGo = useMemo(
+    () => subscriptions.filter(isPayAsYouGo),
+    [subscriptions],
+  );
+  const paygTotal = useMemo(() => sum(payAsYouGo.map((s) => s.price)), [payAsYouGo]);
 
   function openAdd() {
     setEditing(null);
@@ -85,6 +95,8 @@ export default function SubscriptionsPage() {
     setOpen(false);
   }
 
+  const isPayg = form.billingCycle === "as-you-go";
+
   if (!ready) return <Skeleton />;
 
   return (
@@ -100,12 +112,24 @@ export default function SubscriptionsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Monthly total" value={formatCurrency(monthlyTotal)} accent="#a855f7" icon={<CreditCard size={18} />} />
-        <StatCard label="Yearly total" value={formatCurrency(yearlyTotal)} accent="#5b6cff" />
-        <StatCard label="Active subscriptions" value={subscriptions.length} accent="#3ecf8e" />
+        <StatCard
+          label="Monthly recurring"
+          value={formatCurrency(monthlyTotal)}
+          sub={`${recurring.length} recurring · ${formatCurrency(yearlyTotal)}/yr`}
+          accent="#a855f7"
+          icon={<CreditCard size={18} />}
+        />
+        <StatCard label="Yearly recurring" value={formatCurrency(yearlyTotal)} accent="#5b6cff" />
+        <StatCard
+          label="Pay as you go"
+          value={payAsYouGo.length}
+          sub={paygTotal > 0 ? `${formatCurrency(paygTotal)} in top-ups` : "Usage-based"}
+          accent="#f5a623"
+          icon={<Gauge size={18} />}
+        />
       </div>
 
-      {sorted.length === 0 ? (
+      {subscriptions.length === 0 ? (
         <div className="mt-4">
           <EmptyState
             icon={<CreditCard size={28} />}
@@ -119,67 +143,22 @@ export default function SubscriptionsPage() {
           />
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {sorted.map((s) => {
-            const d = daysUntil(s.renewalDate);
-            return (
-              <Card key={s.id} className="group relative overflow-hidden p-5">
-                <span
-                  className="absolute inset-x-0 top-0 h-1"
-                  style={{ backgroundColor: s.color }}
-                />
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-sm font-bold"
-                      style={{ backgroundColor: `${s.color}22`, color: s.color }}
-                    >
-                      {s.name.slice(0, 2).toUpperCase()}
-                    </span>
-                    <div>
-                      <p className="font-semibold text-white">{s.name}</p>
-                      <Badge>{s.category}</Badge>
-                    </div>
-                  </div>
-                  <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <IconButton onClick={() => openEdit(s)} aria-label="Edit">
-                      <Pencil size={15} />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => removeSubscription(s.id)}
-                      aria-label="Delete"
-                      className="hover:bg-accent-rose/20 hover:text-accent-rose"
-                    >
-                      <Trash2 size={15} />
-                    </IconButton>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-end justify-between">
-                  <div>
-                    <p className="text-2xl font-semibold text-white">{formatCurrency(s.price)}</p>
-                    <p className="text-xs text-ink-400">
-                      {cycleLabel(s.billingCycle)} · {formatCurrency(monthlyCost(s))}/mo
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    {s.renewalDate ? (
-                      <>
-                        <p className="text-xs text-ink-400">Renews</p>
-                        <Badge color={d <= 3 ? "#f2557d" : d <= 7 ? "#f5a623" : "#6b6d85"}>
-                          {relativeDay(s.renewalDate)}
-                        </Badge>
-                        <p className="mt-1 text-[11px] text-ink-400">{formatDate(s.renewalDate)}</p>
-                      </>
-                    ) : (
-                      <p className="text-[11px] text-ink-400">No renewal date</p>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+        <>
+          {recurring.length > 0 && (
+            <Section title="Recurring" count={recurring.length}>
+              {recurring.map((s) => (
+                <SubCard key={s.id} s={s} onEdit={openEdit} onDelete={removeSubscription} />
+              ))}
+            </Section>
+          )}
+          {payAsYouGo.length > 0 && (
+            <Section title="Pay as you go" count={payAsYouGo.length}>
+              {payAsYouGo.map((s) => (
+                <SubCard key={s.id} s={s} onEdit={openEdit} onDelete={removeSubscription} />
+              ))}
+            </Section>
+          )}
+        </>
       )}
 
       <Modal
@@ -207,7 +186,7 @@ export default function SubscriptionsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Price (kr)</Label>
+              <Label>{isPayg ? "Top-up amount (kr)" : "Price (kr)"}</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -220,25 +199,38 @@ export default function SubscriptionsPage() {
               <Label>Billing cycle</Label>
               <Select
                 value={form.billingCycle}
-                onChange={(e) =>
-                  setForm({ ...form, billingCycle: e.target.value as BillingCycle })
-                }
+                onChange={(e) => {
+                  const cycle = e.target.value as BillingCycle;
+                  // Pay-as-you-go has no schedule — drop any renewal date.
+                  setForm({
+                    ...form,
+                    billingCycle: cycle,
+                    renewalDate: cycle === "as-you-go" ? "" : form.renewalDate,
+                  });
+                }}
               >
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
                 <option value="yearly">Yearly</option>
+                <option value="as-you-go">Pay as you go</option>
               </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Renewal date (optional)</Label>
-              <Input
-                type="date"
-                value={form.renewalDate}
-                onChange={(e) => setForm({ ...form, renewalDate: e.target.value })}
-              />
+              <Label>Renewal date {isPayg ? "" : "(optional)"}</Label>
+              {isPayg ? (
+                <p className="rounded-xl border border-dashed border-ink-700 px-3 py-2 text-xs text-ink-400">
+                  Not used — paid per top-up
+                </p>
+              ) : (
+                <Input
+                  type="date"
+                  value={form.renewalDate}
+                  onChange={(e) => setForm({ ...form, renewalDate: e.target.value })}
+                />
+              )}
             </div>
             <div>
               <Label>Category</Label>
@@ -279,6 +271,101 @@ export default function SubscriptionsPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+// Section wrapper with a small header + the card grid.
+function Section({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-6">
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-white">{title}</h2>
+        <span className="rounded-full bg-ink-800 px-2 py-0.5 text-[11px] font-medium text-ink-300">
+          {count}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
+    </div>
+  );
+}
+
+function SubCard({
+  s,
+  onEdit,
+  onDelete,
+}: {
+  s: Subscription;
+  onEdit: (s: Subscription) => void;
+  onDelete: (id: string) => void;
+}) {
+  const payg = isPayAsYouGo(s);
+  const d = daysUntil(s.renewalDate);
+  return (
+    <Card className="group relative overflow-hidden p-5">
+      <span className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: s.color }} />
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <span
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-sm font-bold"
+            style={{ backgroundColor: `${s.color}22`, color: s.color }}
+          >
+            {s.name.slice(0, 2).toUpperCase()}
+          </span>
+          <div>
+            <p className="font-semibold text-white">{s.name}</p>
+            <Badge>{s.category}</Badge>
+          </div>
+        </div>
+        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <IconButton onClick={() => onEdit(s)} aria-label="Edit">
+            <Pencil size={15} />
+          </IconButton>
+          <IconButton
+            onClick={() => onDelete(s.id)}
+            aria-label="Delete"
+            className="hover:bg-accent-rose/20 hover:text-accent-rose"
+          >
+            <Trash2 size={15} />
+          </IconButton>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-end justify-between">
+        <div>
+          <p className="text-2xl font-semibold text-white">{formatCurrency(s.price)}</p>
+          <p className="text-xs text-ink-400">
+            {payg
+              ? `${cycleLabel(s.billingCycle)} · per top-up`
+              : `${cycleLabel(s.billingCycle)} · ${formatCurrency(monthlyCost(s))}/mo`}
+          </p>
+        </div>
+        <div className="text-right">
+          {payg ? (
+            <Badge color="#f5a623">
+              <Gauge size={11} /> Usage-based
+            </Badge>
+          ) : s.renewalDate ? (
+            <>
+              <p className="text-xs text-ink-400">Renews</p>
+              <Badge color={d <= 3 ? "#f2557d" : d <= 7 ? "#f5a623" : "#6b6d85"}>
+                {relativeDay(s.renewalDate)}
+              </Badge>
+              <p className="mt-1 text-[11px] text-ink-400">{formatDate(s.renewalDate)}</p>
+            </>
+          ) : (
+            <p className="text-[11px] text-ink-400">No renewal date</p>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 }
 

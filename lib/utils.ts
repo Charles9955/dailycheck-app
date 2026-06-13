@@ -38,7 +38,13 @@ export function isoFromDate(d: Date): string {
   return new Date(d.getTime() - tz).toISOString().slice(0, 10);
 }
 
-// Normalise any billing cycle price into a per-month figure.
+// True for usage-based subscriptions that have no fixed billing schedule.
+export function isPayAsYouGo(sub: Subscription): boolean {
+  return sub.billingCycle === "as-you-go";
+}
+
+// Normalise any billing cycle price into a per-month figure. Pay-as-you-go
+// has no predictable monthly cost, so it contributes 0 to recurring totals.
 export function monthlyCost(sub: Subscription): number {
   switch (sub.billingCycle) {
     case "weekly":
@@ -49,6 +55,8 @@ export function monthlyCost(sub: Subscription): number {
       return sub.price / 3;
     case "yearly":
       return sub.price / 12;
+    case "as-you-go":
+      return 0;
     default:
       return sub.price;
   }
@@ -59,7 +67,13 @@ export function yearlyCost(sub: Subscription): number {
 }
 
 export function cycleLabel(cycle: BillingCycle): string {
-  return { weekly: "Weekly", monthly: "Monthly", quarterly: "Quarterly", yearly: "Yearly" }[cycle];
+  return {
+    weekly: "Weekly",
+    monthly: "Monthly",
+    quarterly: "Quarterly",
+    yearly: "Yearly",
+    "as-you-go": "Pay as you go",
+  }[cycle];
 }
 
 // Empty/undefined dates sort to the far future (Infinity) so they never
